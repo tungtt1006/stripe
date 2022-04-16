@@ -1,0 +1,45 @@
+version: '3.4'
+services:
+  mysql:
+    image: mysql:5.7
+    volumes:
+      - mysql-data:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: 12345
+      MYSQL_DATABASE: stripe
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    ports:
+      - 8081:80
+    links:
+      - mysql
+    environment:
+      - PMA_ARBITRARY=1
+  web:
+    tty: true
+    stdin_open: true
+    command: sh /docker-entrypoint.sh
+    build: ./docker-dev/web
+    links:
+      - mysql
+    ports:
+      - 8080:8080
+    environment:
+      APP_DEBUG: 'true'
+      XDEBUG_MODE: coverage
+      PATH: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/app/vendor/bin
+    volumes:
+      - .:/app:cached
+      - ./docker-dev/web/uploads.ini:/usr/local/etc/php/conf.d/uploads.ini
+      - ./docker/supervisor/:/etc/supervisor.d/
+    #   - composer_caches:/app/vendor
+  mailhog:
+    image: mailhog/mailhog
+    logging:
+      driver: 'none'  # disable saving logs
+    ports:
+      - 1025:1025
+      - 8025:8025
+volumes:
+  composer_caches:
+  mysql-data:
